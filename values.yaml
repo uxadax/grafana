@@ -1,5 +1,6 @@
 # Globale Einstellungen
 global:
+  namespace: monitoring
   imageRegistry: null
   imagePullSecrets: []
 
@@ -239,7 +240,7 @@ imageRenderer:
     repository: grafana-image-renderer
     tag: "3.6.1"
     sha: ""
-    pullPolicy: IfNotPresent
+  pullPolicy: IfNotPresent
   securityContext: {}
   containerSecurityContext:
     runAsNonRoot: true
