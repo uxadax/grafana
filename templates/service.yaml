@@ -1,5 +1,6 @@
-{{- if .Values.service.enabled }}
+# service.yaml (Definition des Kubernetes-Services für Grafana)
 {{- $root := . }}
+{{- if .Values.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

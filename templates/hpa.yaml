@@ -1,15 +1,19 @@
 {{- $sts := list "sts" "StatefulSet" "statefulset" -}}
 {{- if .Values.autoscaling.enabled }}
+# HorizontalPodAutoscaler (HPA) Konfiguration für Grafana
 apiVersion: {{ include "grafana.hpa.apiVersion" . }}
 kind: HorizontalPodAutoscaler
 metadata:
+  # Name und Namespace des HPA
   name: {{ include "grafana.fullname" . }}
   namespace: {{ include "grafana.namespace" . }}
   labels:
+    # Standard-Labels zur Identifikation des HPA
     app.kubernetes.io/name: {{ include "grafana.name" . }}
     helm.sh/chart: {{ include "grafana.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  # Zielressource, die skaliert werden soll (Deployment oder StatefulSet)
   scaleTargetRef:
     apiVersion: apps/v1
     {{- if has .Values.persistence.type $sts }}
@@ -18,9 +22,11 @@ spec:
     kind: Deployment
     {{- end }}
     name: {{ include "grafana.fullname" . }}
+  # Minimale und maximale Anzahl der Replikate
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:
+    # Speicher-Auslastung als Skalierungsmetrik (falls definiert)
     {{- if .Values.autoscaling.targetMemory }}
     - type: Resource
       resource:
@@ -33,6 +39,7 @@ spec:
           averageUtilization: {{ .Values.autoscaling.targetMemory }}
         {{- end }}
     {{- end }}
+    # CPU-Auslastung als Skalierungsmetrik (falls definiert)
     {{- if .Values.autoscaling.targetCPU }}
     - type: Resource
       resource:
@@ -45,6 +52,7 @@ spec:
           averageUtilization: {{ .Values.autoscaling.targetCPU }}
         {{- end }}
     {{- end }}
+  # Verhaltensregeln für das Skalieren (optional)
   {{- if .Values.autoscaling.behavior }}
   behavior: {{ toYaml .Values.autoscaling.behavior | nindent 4 }}
   {{- end }}

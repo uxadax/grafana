@@ -1,38 +1,48 @@
 {{- if (and (not .Values.useStatefulSet) (or (not .Values.persistence.enabled) (eq .Values.persistence.type "pvc"))) }}
+# Deployment-Konfiguration für Grafana
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Name und Namespace der Deployment-Ressource
   name: {{ include "grafana.fullname" . }}
   namespace: {{ include "grafana.namespace" . }}
   labels:
+    # Labels zur Identifikation der Ressource
     {{- include "grafana.labels" . | nindent 4 }}
     {{- with .Values.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  # Zusätzliche Anmerkungen (falls definiert)
   {{- with .Values.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  # Anzahl der Replikate, falls Autoskalierung deaktiviert ist
   {{- if (not .Values.autoscaling.enabled) }}
   replicas: {{ .Values.replicas }}
   {{- end }}
+  # Maximale Anzahl an Revisionen, die behalten werden sollen
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  # Selektiert Pods basierend auf Labels
   selector:
     matchLabels:
       {{- include "grafana.selectorLabels" . | nindent 6 }}
+  # Strategie für das Deployment (z. B. RollingUpdate)
   {{- with .Values.deploymentStrategy }}
   strategy:
     {{- toYaml . | trim | nindent 4 }}
   {{- end }}
   template:
     metadata:
+      # Labels und Annotationen für die Pods
       labels:
         {{- include "grafana.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       annotations:
+        # Überwachung von Konfigurationsänderungen durch Checksumme
         checksum/config: {{ include "grafana.configData" . | sha256sum }}
         {{- if .Values.dashboards }}
         checksum/dashboards-json-config: {{ include (print $.Template.BasePath "/dashboards-json-configmap.yaml") . | sha256sum }}
@@ -44,10 +54,12 @@ spec:
         {{- if .Values.envRenderSecret }}
         checksum/secret-env: {{ tpl (toYaml .Values.envRenderSecret) . | sha256sum }}
         {{- end }}
+        # Standardcontainer für kubectl-Befehle
         kubectl.kubernetes.io/default-container: {{ .Chart.Name }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      # Pod-Spezifikation mit Ressourcen, Volumes und Containern
       {{- include "grafana.pod" . | nindent 6 }}
 {{- end }}

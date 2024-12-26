@@ -1,11 +1,15 @@
 {{- if .Values.createConfigmap }}
+# ConfigMap für Grafana
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  # Name und Namespace der ConfigMap
   name: {{ include "grafana.fullname" . }}
   namespace: {{ include "grafana.namespace" . }}
   labels:
+    # Labels zur Identifikation der ConfigMap
     {{- include "grafana.labels" . | nindent 4 }}
+  # Anmerkungen für die ConfigMap (optional)
   {{- if or .Values.configMapAnnotations .Values.annotations }}
   annotations:
     {{- with .Values.annotations }}
@@ -16,5 +20,6 @@ metadata:
     {{- end }}
   {{- end }}
 data:
+  # Grafana-spezifische Konfiguration
   {{- include "grafana.configData" . | nindent 2 }}
 {{- end }}

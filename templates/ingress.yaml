@@ -1,12 +1,13 @@
 {{- if .Values.ingress.enabled -}}
+{{- $fullName := include "grafana.fullname" . }}
 {{- $ingressApiIsStable := eq (include "grafana.ingress.isStable" .) "true" -}}
 {{- $ingressSupportsIngressClassName := eq (include "grafana.ingress.supportsIngressClassName" .) "true" -}}
 {{- $ingressSupportsPathType := eq (include "grafana.ingress.supportsPathType" .) "true" -}}
-{{- $fullName := include "grafana.fullname" . -}}
 {{- $servicePort := .Values.service.port -}}
 {{- $ingressPath := .Values.ingress.path -}}
 {{- $ingressPathType := .Values.ingress.pathType -}}
 {{- $extraPaths := .Values.ingress.extraPaths -}}
+
 apiVersion: {{ include "grafana.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
@@ -17,12 +18,10 @@ metadata:
     {{- with .Values.ingress.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- range $key, $value := . }}
-    {{ $key }}: {{ tpl $value $ | quote }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- end }}
 spec:
   {{- if and $ingressSupportsIngressClassName .Values.ingress.ingressClassName }}
   ingressClassName: {{ .Values.ingress.ingressClassName }}
@@ -32,13 +31,13 @@ spec:
     {{- tpl (toYaml .) $ | nindent 4 }}
   {{- end }}
   rules:
-  {{- if .Values.ingress.hosts  }}
-  {{- range .Values.ingress.hosts }}
+    {{- if .Values.ingress.hosts }}
+    {{- range .Values.ingress.hosts }}
     - host: {{ tpl . $ | quote }}
       http:
         paths:
           {{- with $extraPaths }}
-          {{- toYaml . | nindent 10 }}
+          {{- toYaml . | nindent 12 }}
           {{- end }}
           - path: {{ $ingressPath }}
             {{- if $ingressSupportsPathType }}
@@ -54,11 +53,15 @@ spec:
               serviceName: {{ $fullName }}
               servicePort: {{ $servicePort }}
               {{- end }}
-  {{- end }}
-  {{- else }}
+    {{- end }}
+    {{- else }}
     - http:
         paths:
-          - backend:
+          - path: {{ $ingressPath }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+            backend:
               {{- if $ingressApiIsStable }}
               service:
                 name: {{ $fullName }}
@@ -68,11 +71,5 @@ spec:
               serviceName: {{ $fullName }}
               servicePort: {{ $servicePort }}
               {{- end }}
-            {{- with $ingressPath }}
-            path: {{ . }}
-            {{- end }}
-            {{- if $ingressSupportsPathType }}
-            pathType: {{ $ingressPathType }}
-            {{- end }}
-  {{- end -}}
+    {{- end }}
 {{- end }}

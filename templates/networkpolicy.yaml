@@ -1,19 +1,23 @@
 {{- if .Values.networkPolicy.enabled }}
+# NetworkPolicy zur Steuerung des Datenverkehrs für Grafana
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ include "grafana.fullname" . }}
   namespace: {{ include "grafana.namespace" . }}
   labels:
+    # Labels zur Identifikation der NetworkPolicy
     {{- include "grafana.labels" . | nindent 4 }}
     {{- with .Values.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
+  # Zusätzliche Anmerkungen (falls definiert)
   {{- with .Values.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  # Definiert die Richtlinienarten (Ingress und/oder Egress)
   policyTypes:
     {{- if .Values.networkPolicy.ingress }}
     - Ingress
@@ -21,30 +25,37 @@ spec:
     {{- if .Values.networkPolicy.egress.enabled }}
     - Egress
     {{- end }}
+  # Selektiert Pods basierend auf Labels
   podSelector:
     matchLabels:
       {{- include "grafana.selectorLabels" . | nindent 6 }}
 
   {{- if .Values.networkPolicy.egress.enabled }}
   egress:
+    # Erlaubt DNS-Auflösung, falls nicht blockiert
     {{- if not .Values.networkPolicy.egress.blockDNSResolution }}
     - ports:
         - port: 53
           protocol: UDP
     {{- end }}
+    # Zusätzliche Ports für ausgehenden Datenverkehr
     - ports:
-        {{ .Values.networkPolicy.egress.ports | toJson }}
+      {{- toYaml .Values.networkPolicy.egress.ports | nindent 6 }}
       {{- with .Values.networkPolicy.egress.to }}
       to:
-        {{- toYaml . | nindent 12 }}
+        # Definiert zulässige Ziele für den ausgehenden Verkehr
+        {{- toYaml . | nindent 6 }}
       {{- end }}
   {{- end }}
+
   {{- if .Values.networkPolicy.ingress }}
   ingress:
     - ports:
+      # Erlaubt Zugriff auf den Grafana-Service-Port
       - port: {{ .Values.service.targetPort }}
       {{- if not .Values.networkPolicy.allowExternal }}
       from:
+        # Erlaubt nur Pods mit spezifischen Labels den Zugriff
         - podSelector:
             matchLabels:
               {{ include "grafana.fullname" . }}-client: "true"
@@ -52,6 +63,7 @@ spec:
         - namespaceSelector:
             {{- toYaml . | nindent 12 }}
         {{- end }}
+        # Weitere Pods mit spezifischen Rollen können ebenfalls Zugriff erhalten
         - podSelector:
             matchLabels:
               {{- include "grafana.labels" . | nindent 14 }}
